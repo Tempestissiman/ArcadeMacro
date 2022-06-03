@@ -19,18 +19,18 @@ Tools you will need:
 This document will be divided into two parts:
 - Using macro: where concepts and basic usages are explained
 - Creating macro: how to create your own macro
-- Reference: a comprehensive of all available class and methods
+- Reference: a comprehensive of all available classes and methods
 
 # Part 1. Using macros
 
 ### 1. What are macros?
-macros are external, customizable scripts that are made for automating tasks. They are essentially mini-programs that will run within Arcade, and will tell Arcade what to do based on different actions and inputs from the user.
+Macros are external, customizable scripts made for automating tasks. They are essentially mini-programs that will run within Arcade, and will tell Arcade what to do based on different actions and inputs from the user.
 
-macros are great for common tasks that are tedious and time consuming to do manually but its steps can easily be described. Examples include: Offsetting notes position, splitting arcs into segments, generating decorative traces, etc.
+Macros are great for common tasks that are tedious and time consuming to do manually but its steps can easily be described. Examples include: Offsetting notes position, splitting arcs into segments, generating decorative traces, etc.
 
 
 ### 2. How do I install a macro?
-macros are defined within a single `.lua` script file (support for other script file referencing is coming soon), and they must be placed within the `Macros` folder of your Arcade installation. For example, if your Arcade is installed at `D:\Programs\Arcade\`, then place your `.lua` script, `mirror.lua` for example, in: `D:\Programs\Arcade\Macros`.
+macros are defined within a single `.lua` script file (support for other script file referencing is coming soon), and they must be placed within the `Macros` folder of your Arcade installation. For example, if your Arcade is installed at `D:\Programs\Arcade\`, then place your `.lua` script, `mirror.lua` for example, in: `D:\Programs\Arcade\Macros\mirror.lua`.
 
 Within your ArcadeZero, locate the Macro button on the bottom right corner (the button with a puzzle piece icon). The Macro selection menu should show up. You will see any registered macros in here, and if you don't, press the refresh button (top right of the menu).
 
@@ -72,13 +72,13 @@ For the exploratives out there, try these out for yourself:
 - Passing more than 1 arguments to `notify`
 - Try `log` instead of `notify`
 - Try joining strings with `..` (look up what it does in the lua tutorial!)
-- Removing the macro (try to look it up in the reference document!)
+- Removing the macro (try to look it up in part 3!)
 
 ## Example 2. Creating notes
 
 We'll jump right into the next task, which will probably be the most common task you'll do when working with macros - creating notes.
 
-The last example didn't require opening an actual project. But since you'll be working with chart file here, prepare a blank test project to play around.
+The last example didn't require opening an actual project. But since you'll be working with a chart file here, prepare a blank test project to play around.
 
 Let's look at a simple script first:
 ```lua
@@ -110,7 +110,7 @@ That was quite a lot of steps wasn't it, but trust me they all have a purpose. I
 >     Event.tap(1000, 1, 0).save().commit()
 > end)
 > ```
-> Which do the same thing but with less code. You'll also see why I didn't write it this way shortly
+> Which do the same thing but with less code.
 
 Now let's try adding multiple notes, and while we're at it, let's create other note types as well
 
@@ -148,7 +148,7 @@ addMacro("addNote", function()
     trace.save().commit()
 
     local arctap = Event.arctap(2500, trace)
-    -- Arctaps are a bit tricky! they are naturally bound to a trace
+    -- Arctaps are a bit tricky! They are naturally bound to a trace
     -- So you must create a trace before creating an arctap
     arctap.save().commit()
 end)
@@ -204,8 +204,8 @@ Run it, and you should see that one undo will delete all 5 notes! Similar for re
 
 Try these out for yourself:
 - Use a for loop to add notes
-- Try different parameters for notes. Be careful with timingGroups though!
-- Pass a string into `Command.create()` (e.g. `Command.create("test macro")`)
+- Try different parameters for notes. Be careful with timingGroups though, as specifying an invalid timing group will cause an error
+- Pass a string into `Command.create()` (e.g. `Command.create("test macro")`).
 
 ## Example 3. Self destruct button
 
@@ -303,12 +303,12 @@ end)
 
 Let's focus on the snippet that matters the most here
 ```lua
-    local request = TrackInput.RequestTiming() -- Ask user to specify a timing
+    local request = TrackInput.requestTiming() -- Ask user to specify a timing
     coroutine.yield()                          -- Wait for response
     local timing = request.result["timing"]
 ```
 
-This snippet's purpose is to get input from the macro user, specifically, where does the user want to create our pattern at. `TrackInput.RequestTiming()` will switch Arcade into timing input mode, where the user have to click on the track (similar to how you click on a track to create a tap note, for example), to specify the timing.
+This snippet's purpose is to get input from the macro user, specifically, where the user wants to create our pattern at. `TrackInput.RequestTiming()` will switch Arcade into timing input mode, where the user have to click on the track (similar to how you click on a track to create a tap note, for example), to specify the timing.
 
 Since the user will take some time to do so, and your lua code runs immediately, we use `coroutine.yield()` to suspense the macro's execution. Arcade will resume our macro once the user has inputted the requested information (or in this case, after they clicked on the track where they want to create our pattern).
 
@@ -317,7 +317,7 @@ The `request` variable is where Arcade will pass that information to our macro, 
 The rest is simple! We just offset our pattern with whatever `timing` is. Go ahead and give the macro a try!
 
 Try these out for yourself:
-- Try `TrackInput.RequestPosition(timing)`. This is a bit tricker to use, be sure to check out the reference document!
+- Try `TrackInput.requestPosition(timing)`. This is a bit tricker to use, you have to pass in the timing parameter which will specify where the vertical input plane will be placed. Normally you use a `TrackInput.requestTiming()` then feed the result to `TrackInput.requestPosition(timing)`
 - Try requesting and waiting twice
 
 ### Example 3.5 Self destruction button, but a bit less destructive
@@ -379,7 +379,7 @@ addMacro("sakuzyoBeam", function()
 end)
 ```
 
-Dialog boxes are considerably more complicated. For once you can create multiple field within the same dialog box, and then read values from all of them. Second you have to make sure our user can only input the right format (like integer only, or maybe we allow both integer and decimal but not alphabetical characters). These complications are all dealt with in `DialogField`
+Dialog boxes are considerably more complicated. For once you can create multiple field within the same dialog box, and then read values from all of them. Second you have to make sure our user can only input the right format (like integer only, or maybe we allow both integer and decimal but not alphabetical characters...). These complications are all dealt with in `DialogField`
 
 This snippet
 ```lua
@@ -390,7 +390,7 @@ This snippet
             .setHint("INPUT CONFIRMATION CODE")
             .textField(FieldConstraint.create().integer())
 ```
-reads: `codeField` is a field of a dialog box, it's created with an identification key of "code", the label of the field is "Confirmation code", when user hovers over it, the tooltip displays as "Your confirmation code is 61616", and when nothing is inputted yet, the hint (gray text that disappears once something is typed in) displays as "INPUT YOUR CONFIRMATION CODE". This field is a text field, with a constraint that the content must be an integer.
+reads: `codeField` is a field of a dialog box, it's created with an identification *key* of "code", the *label* of the field is "Confirmation code", when user hovers over it, the *tooltip* displays as "Your confirmation code is 61616", and when nothing is inputted yet, the *hint* (gray text that disappears once something is typed in) displays as "INPUT YOUR CONFIRMATION CODE". This field is a *text field*, with a *constraint* that the content must be an *integer*.
 
 This snippet
 ```lua
@@ -487,21 +487,21 @@ The most noteworthy part is again, the user input part
     )
 ```
 
-We're this time, asking the user to select a single arc note from the chart, as a form of asking for input values. We then retrieve the arc's timing, position, etc., then create our on arcs based on those information. Finally we delete the inputted arc, and our conversion is complete!
+We're this time asking the user to select a single arc note from the chart, as a form of asking for input values. We then retrieve the arc's timing, position, etc., then create our on arcs based on those information. Finally we delete the inputted arc, and our conversion is complete!
 
-Please note that you still have to specify `request.result["arc"][1]` to gather the arc's data. `request.result` alone won't work.
+> Please note that you still have to specify `request.result["arc"][1]` to gather the arc's data. `request.result` alone won't work.
 
 The last thing to point out is the `Context` class, which provides very useful information about the current chart and settings, such as BPM, currently active arc color, currently active arc type, etc. Be sure to check out the reference document for everything you can do with this class!
 
 Try this out for yourself:
 - Convert this macro to process multiple arcs at once (hint: `EventSelectionInput.requestEvents(..)`)
 - Try to make it work for traces as well (hint: `.arc()` combines `.solidArc()` and `.voidArc()`)
-- Make this works with arcs with unchanging y value as well.
+- This is not quite amygdata arc yet! If the arc's starting y coordinate and ending y coordinate is the same, then no "arc beams" will be created. Try expanding on this!
 
 ### A few extra tips
-- Always use local variable
+- Remember to always use `local` for assigning local variable
 - Error message can be hard to read within Arcade. You can always open the `Error Log` (middle left hand side)
-- If you plan to share your macros, consider prefixing your macro with something unique (mine will always starts with `zero.`) to avoid collision
+- If you plan to share your macros, consider prefixing your macro with something unique (my own macros follow the format `zero.{category}.{name}`) to avoid collision
 - You can create macro within macro. Not sure if this is useful
 
 # Part 3. Reference
