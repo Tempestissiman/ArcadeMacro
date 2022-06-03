@@ -65,7 +65,7 @@ All macros will be registered into Arcade with the function `addMacro`. Note tha
 -  The second parameter is actually a **function**, which gives instruction on what should happen each time the macro is run. You might not be very familiar with the concept of passing functions as argument into other functions, but this is the only instance that you will need to do this, so don't worry too much
 - Within the function body, we give a single instruction: notify the user with the message "Hello World!"
 
-> NOTE! Macro names must be unique. If you try yo create another macro with "helloWorld" within the same script, or in another script, an error will be thrown and only the first macro will be accepted.
+> NOTE! Macro names must be unique. If you try to create another macro with "helloWorld" within the same script, or in another script, an error will be thrown and only the first macro will be accepted.
 
 For the exploratives out there, try these out for yourself:
 - Passing numbers to `notify`
