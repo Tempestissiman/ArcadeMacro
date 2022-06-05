@@ -643,9 +643,9 @@ Method|Description|Output
 setLabel(string label)|Set the field's label|DialogField
 setTooltip(string tooltip)|Set the field's tooltip|DialogField
 setHint(string hint)|Set the field's hint|DialogField
-defaultTo(string hint)|Set the field's hint|DialogField
-textField(FieldConstraint constraint)|Convert field to a text field that only accept inputs satisfying the specified constraint|DialogField
-dropdownMenu(dynamic option1, dynamic option2,...)|Convert field to a dropdown menu with specified constraint|DialogField
+defaultTo(dynamic value)|Set the field's default value|DialogField
+textField(FieldConstraint constraint)|Convert field to a text field with specified constraint|DialogField
+dropdownMenu(dynamic option1, dynamic option2,...)|Convert field to a dropdown menu with specified option values|DialogField
 checkbox()|Convert field to a checkbox|DialogField
 description(string message = nil)|Convert a field to a description field (only used for displaying text, not for receiving input). If you don't specify the message here, it's `label` will be used instead|DialogField
 ## 5. Events
@@ -695,7 +695,6 @@ yAt(number timing, bool clamp = true)|Arc's y coordinate position at timing. Cla
 ### 5.4 LuaArcTap
 Property|Description|Type
 -|-|-
-timing|The arctap note's timing (ms)|number
 arc|The parent arc note|LuaArc
 ### 5.5 LuaTiming
 Property|Description|Type
@@ -711,6 +710,9 @@ mz|The camera event's z coordinate displacement|number
 rx|The camera event's x axis rotation|number
 ry|The camera event's y axis rotation|number
 rz|The camera event's z axis rotation|number
+duration|The camera event's duration|number
+type|The camera event's easing type("reset", "qi", "qo", ...)|string
+
 ## 6. Command classes
 ### 6.1 Command
 Static method|Description|Type
