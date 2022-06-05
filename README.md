@@ -262,7 +262,7 @@ We'll go back to example 2. This time instead of creating notes at 1000ms, let's
 ```lua
 -- addNote.lua
 addMacro("addNoteParam", function()
-    local request = TrackInput.RequestTiming() -- Ask user to specify a timing
+    local request = TrackInput.requestTiming() -- Ask user to specify a timing
     coroutine.yield()                          -- Wait for response
 
     timing = request.result["timing"]
@@ -390,7 +390,13 @@ This snippet
             .setHint("INPUT CONFIRMATION CODE")
             .textField(FieldConstraint.create().integer())
 ```
-reads: `codeField` is a field of a dialog box, it's created with an identification *key* of "code", the *label* of the field is "Confirmation code", when user hovers over it, the *tooltip* displays as "Your confirmation code is 61616", and when nothing is inputted yet, the *hint* (gray text that disappears once something is typed in) displays as "INPUT YOUR CONFIRMATION CODE". This field is a *text field*, with a *constraint* that the content must be an *integer*.
+reads: 
+- `codeField` is a field of a dialog box
+- It's created with an identification *key* of "code"
+- The *label* of the field is "Confirmation code"
+- When user hovers over it, the *tooltip* displays as "Your confirmation code is 61616"
+- When nothing is inputted yet, the *hint* (gray text that disappears once something is typed in) displays as "INPUT YOUR CONFIRMATION CODE".
+- This field is a *text field*, with a *constraint* that the content must be an *integer*.
 
 This snippet
 ```lua
@@ -531,6 +537,7 @@ currentArcType|Current default arc type|string
 currentIsVoidMode|true means creating traces by default, false means creating arcs by default|bool
 currentTimingGroup|Currently active timing group|bool
 timingGroupCount|Number of timing groups in the current chart|bool
+language|The currently used language|number
 
 
 Static method|Description|Output
@@ -538,7 +545,22 @@ Static method|Description|Output
 beatLengthAt(number timing, number timingGroup = 0)|Length of a beat at specified timing and within a timing group (ms)|number
 bpmAt(number timing, number timingGroup = 0)|Bpm value at specified timing and within a timing group (ms)|number
 divisorAt(number timing, number timinggroup = 0)|Divisor value at specified timing and within a timingg group (ms)|number
-### 1.3. XY
+### 1.3. Event
+Static method|Description|Output
+-|-|-
+tap(number timing, number lane, number timingGroup = 0)|Create a tap note's description|LuaTap
+hold(number timing, number endTiming, number lane, number timingGroup = 0|Create a hold note's description|LuaHold
+arc(number timing, number startX, number startY, number endTiming, number endX, number endY, bool isVoid=false, number color=0, string type='s', number timingGroup=0)|Create an arc note's description|LuaArc
+arc(number timing, XY startXY, number endTiming, XY endXY, bool isVoid=false, number color=0, string type='s', number timingGroup=0)|Create an arc note's description|LuaArc
+arctap(number timing, LuaArc arc)|Create an arctap's description|LuaArcTap
+timing(number timing, number bpm, number divisor, number timingGroup=0)|Create a timing event's description|LuaTiming
+camera(number timing, number x=0, number y=0, number z=0, number rx=0, number ry=0, number rz=0, string type='reset', number duration=1, number timingGroup=0)|Create a camera event's description|LuaCamera
+createTimingGroup(number bpm, number divisor)|Create a new timing group with specified bpm and divisor as it's base timing event. Returns the newly created timing group|number
+query(EventSelectionConstraint constraint)|Query for all notes in the chart that satisfies the specified constraint|Table
+getCurrentSelection(EventSelectionConstraint constraint = null)|Query for all notes in the currently selected notes. Optionally provide a constraint to only query for notes that satisfies the specified constraint|Table
+setSelection(Table notes)|Set the selected notes to the provided list of notes|nil
+
+### 1.4. XY
 Property|Description|Type
 -|-|-
 x|The horizontal x coordinate (arc unit)|number
@@ -625,6 +647,7 @@ defaultTo(dynamic value)|Set the field's default value|DialogField
 textField(FieldConstraint constraint)|Convert field to a text field with specified constraint|DialogField
 dropdownMenu(dynamic option1, dynamic option2,...)|Convert field to a dropdown menu with specified option values|DialogField
 checkbox()|Convert field to a checkbox|DialogField
+description(string message = nil)|Convert a field to a description field (only used for displaying text, not for receiving input). If you don't specify the message here, it's `label` will be used instead|DialogField
 ## 5. Events
 ### 5.0 LuaChartEvent (abstract)
 Property|Description|Type
