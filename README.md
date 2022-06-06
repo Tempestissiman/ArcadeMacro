@@ -644,7 +644,7 @@ setLabel(string label)|Set the field's label|DialogField
 setTooltip(string tooltip)|Set the field's tooltip|DialogField
 setHint(string hint)|Set the field's hint|DialogField
 defaultTo(dynamic value)|Set the field's default value|DialogField
-textField(FieldConstraint constraint)|Convert field to a text field with specified constraint|DialogField
+textField(FieldConstraint constraint)|Convert field to a text field that only accept inputs satisfying the specified constraint|DialogField
 dropdownMenu(dynamic option1, dynamic option2,...)|Convert field to a dropdown menu with specified option values|DialogField
 checkbox()|Convert field to a checkbox|DialogField
 description(string message = nil)|Convert a field to a description field (only used for displaying text, not for receiving input). If you don't specify the message here, it's `label` will be used instead|DialogField
