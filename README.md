@@ -800,7 +800,7 @@ In fact, the idea of manipulating macros with macros themselves are super powerf
 - Remember to always use `local` for assigning local variable
 - Error message can be hard to read within Arcade. You can always open the `Error Log` (middle left hand side)
 - If you plan to share your macros, consider prefixing your macro with something unique (my own macros follow the format `zero.{category}.{name}`) to avoid collision
-- You can create macro within macro. Not sure if this is useful
+- Any time you see `a["b"]`, you can alternatively write `a.b` (this is a lua feature). For example, `request.result["arc"]` can be `request.result.arc`
 
 # Part 3. Reference
 
