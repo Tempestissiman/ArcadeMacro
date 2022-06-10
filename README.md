@@ -504,6 +504,298 @@ Try this out for yourself:
 - Try to make it work for traces as well (hint: `.arc()` combines `.solidArc()` and `.voidArc()`)
 - This is not quite amygdata arc yet! If the arc's starting y coordinate and ending y coordinate is the same, then no "arc beams" will be created. Try expanding on this!
 
+### Example 6. Advanced macro creation
+
+Starting from ArcadeZero v3.3.2, `addMacro` now properly works within another macro. This opens up interesting possibilities.
+Let's create a very interesting macro this time, `stash`. We will create a macro that will save the users selection into a stash, and automatically add a macro that let them paste it!
+
+This will be a rather long and complicated section that will require knowledge from all the previous examples combined. The approach will be rather different, as instead of showing you the code right away, we'll walk through the process of thinking through the problem together (there will be the full code available at the bottom of this section for your convenience).
+
+So let's get started. Let's first decide how exactly our macro will function in concrete steps:
+1. Our user will select our macro
+2. Then our user will select the notes to be stored into a stash, then press enter to confirm the selection
+3. A dialog box will appear, asking for the *name* of the stash
+4. A new macro with the specified name will be created
+5. This macro when selected will prompt our user to select a timing point
+6. The stash associated with that macro will be pasted on that timing point
+
+Each step is harder to implement than the previous one. So let's go through them in order:
+
+First let's declare our macro (step 1):
+```lua
+addMacro("stash", function()
+end)
+```
+
+And step 2 is also very easy, we just request a selection:
+```lua
+    ...
+    local eventRequest = EventSelectionInput.requestEvents(
+                            EventSelectionConstraint.create().any(),
+                            "Select notes to be included in your stash. Press ENTER to confirm")
+    coroutine.yield()
+    local events = eventRequest.result
+    ...
+```
+So now we captured the user's selections into events. That's step 2 complete!
+
+At this point we need to create a dialog box that ask for the stash's name. We know how to do this!
+```lua
+    ...
+    local dialogRequest = DialogInput.withTitle("Stash creation").requestInput({
+        DialogField
+            .create("name")
+            .setLabel("Stash's name")
+            .setHint("Enter anything")
+            .setTooltip("Your stash name will be included in the newly created macro's name")
+    })
+    coroutine.yield()
+    local name = dialogRequest.result["name"]
+    ...
+```
+Very nice. The code I wrote here are deliberately different in syntax, but in essence they do the same thing.
+
+Now it's all unknown territory! Let's first consider our problems:
+- We first need to create a new macro, that acts differently, from the same macro.
+- We need to store the different sets of notes somewhere, and our different macro will have to retrieve the right set back to actually paste back the notes.
+
+Let's tackle them one by one. Well, let's do some testing first, and see what will happen when we create a macro after retrieving the name
+```lua
+    ...
+    local name = dialogRequest.result["name"]
+    addMacro(name, function() end)
+    ...
+```
+Run the macro, and whatever we type into the input box, a macro with the same name gets created. It's kind of hard to navigate actually, but we'll come back to this problem later. For now we know that `addMacro` works inside a macro.
+
+Now we need the macros to do different things. And the only thing that differentiate different macros is their name. We now wonder if our macro can actually retrieve this information. Let's test it out!
+```lua
+    ...
+    local name = dialogRequest.result["name"]
+    addMacro(name, function() 
+        notify(name)
+    end)
+    ...
+```
+Run it, and when we run our new macro, the notification actually output back whatever we typed into the dialog box. This is amazing! Our `stash` macro is now a macro generator, and our first problem is solved.
+
+The second problem is a bit tricky, you'll need to be familiar with how lua tables work (or if you're familiar with hash map, or python dictionary, then you can look up how to do it in lua). If you're a bit shaky with tables, then refer to the official Lua tutorial linked at the top.
+ 
+This is one way to do it, but we will create a global variable that will keep track of different stashes's name, and their selection
+```lua
+    storedStashes = {}
+    addMacro("stash", ...)
+```
+You're free to try out what will happens if `storedStashes = {}` is written in the body of our `stash` macro (spoiler: it's reset every time we run our macro)
+Anyway, every time we create a macro, we'll also add a new entry to `storedStashes` like this
+```lua
+    storedStashes = {}
+    addMacro("stash", function()
+        ...
+        local events = eventRequest.result
+        ...
+        local name = dialogRequest.result["name"]
+        storedStashes[name] = events
+
+        addMacro(name, function() 
+            notify(name)
+        end)
+        ...
+    end)
+```
+Now let's test out if our new macro can properly retrieve the stash's data. Let's write a simple test that output the number of taps within the stash
+```lua
+    addMacro(name, function() 
+        local stash = storedStashes[name]
+        notify(#stash["tap"])
+    end)
+```
+Give it a try and you'll see that the generated macro will output different number of taps. This is actually step 4 complete!
+
+Only step 5 and 6 now. While it might seem simple, there's a lot of caveats left to be considered.
+- We need the minimum timestamps of all notes in the stash
+- We need to copy each note and change their timing, or endTiming, to an offsetted value
+- We need to save all of them in a batch command
+- Worst of all, handling arctaps seems like a pain!
+
+There are many ways to solve these, but the fastest way would require us to backtrack a little. Let's change how we store our stashes a little bit so this step becomes easier.
+Let's change
+```lua
+    local events = eventRequest.result
+    ...
+    storedStashes[name] = events
+```
+to
+```lua
+    -- We don't need this anymore
+    -- local events = eventRequest.result
+    newStash = {}
+    newStash.events = eventRequest.resultCombined
+    newStash.arctaps = eventRequest.result["arctap"]
+    storedStashes[name] = newStash
+```
+`resultCombined` by the way contains all note types mixed into one table. We will find this useful.
+`arctaps` are stored separately since we'll need to handle them differently than other note types.
+
+Alright, let's finish it up! First we require the timing point to paste the stash at, and create a batch command while we're at it
+```lua
+    addMacro("stash."..name, function() 
+        local stash = storedStashes[name]
+
+        local timingRequest = TrackInput.requestTiming(false, "Select where to paste your stash")
+        coroutine.yield()
+        local timing = timingRequest.result["timing"]
+
+        local batchCommand = Command.create("pasting stash "..name)
+
+        -- Code to copy notes goes here
+
+        batchCommand.commit()
+    end)
+```
+Then all that's left is copying the notes over. We'll make use of `event.is` to determine the note type. For arctaps, we'll add them alongside arcs with a nested for loop like so:
+```lua
+    ...
+    local batchCommand = Command.create("pasting stash "..name)
+
+    local allEvents = stash.events
+    local arctaps = stash.arctaps
+
+    local origin = allEvents[1].timing -- The minimum timing of all notes
+    local displace = timing - origin   -- The amount to shift all notes by
+
+    for i = 1, #allEvents, 1 do
+        local event = allEvents[i].copy()
+
+        event.timing = displace + event.timing
+
+        if event.is('long') then -- Notes with endTiming also have to have this value updated
+            event.endTiming = displace + event.endTiming
+        end
+
+        batchCommand.add(event.save())
+
+        if event.is('arc') then 
+            local arc = allEvents[i]
+
+            -- Look for arctaps belonging to this arc to copy
+            for i = 1, #arctaps, 1 do
+                local arctap = stash.arctaps[i]
+                if arctap.arc == arc then
+                    local arctapCopy = arctap.copy();
+                    arctapCopy.arc = event
+                    arctapCopy.timing = displace + arctap.timing
+                    batchCommand.add(arctapCopy.save())
+                end
+            end
+        end
+    end
+
+    batchCommand.commit()
+    ...
+```
+Here it's important we save the note first before any arctap (otherwise the arctap has nowhere to attach to). 
+
+After much effort, our code is finally functional. But let's take it one step further by improving the user experiene. We'll make our newly created macros more distinguished by making use of Unity's rich text formatting!
+
+Let's change how we generate our macro from
+```lua
+    addMacro("stash."..name, ...)
+```
+to
+```lua
+    addMacro("<color=#2E86AB>stash."..name.."</color>", ...)
+```
+This will give our macro name in the Macro selection window a fancy dark blue color, which makes it very easy to distinguish. Feel free to change the color to your liking.
+
+However you will observe a problem and that is your macros' order is changed. That's because although the first letter `<` aren't displayed, they're still part of your macro's name, and so it'll be sorted accordingly. To solve this, use `addMacroWithSort`.
+```lua
+    addMacroWithSort("<color=#2E86AB>stash."..name.."</color>", "stash."..name,...)
+```
+The ordering should be fixed now. You can even modify this to allow newer stashes to be places last.
+
+Here's the final code:
+```lua
+storedStashes = {}
+addMacroWithSort("<color=#2E86AB>stash."..name.."</color>", "stash."..name, function()
+    -- Request for user's selection
+    local eventRequest = EventSelectionInput.requestEvents(
+                            EventSelectionConstraint.create().any(),
+                            "Select notes to be included in your stash. Press ENTER to confirm")
+    coroutine.yield()
+
+    -- Request for stash's name
+    local dialogRequest = DialogInput.withTitle("Stash creation").requestInput({
+        DialogField
+            .create("name")
+            .setLabel("Name")
+            .setHint("Enter anything")
+            .setTooltip("Your stash name will be included in the newly created macro's name")
+    })
+    coroutine.yield()
+    local name = dialogRequest.result["name"]
+
+    newStash = {}
+    newStash.events = eventRequest.resultCombined
+    newStash.arctaps = eventRequest.result["arctap"]
+    storedStashes[name] = newStash
+    notify(#newStash.events)
+
+    addMacro("stash."..name, function() 
+        local stash = storedStashes[name]
+
+        local timingRequest = TrackInput.requestTiming(false, "Select where to paste your stash")
+        coroutine.yield()
+        local timing = timingRequest.result["timing"]
+
+        local batchCommand = Command.create("pasting stash "..name)
+
+        local allEvents = stash.events
+        local arctaps = stash.arctaps
+
+        local origin = allEvents[1].timing -- The minimum timing of all notes
+        local displace = timing - origin   -- The amount to shift all notes by
+
+        for i = 1, #allEvents, 1 do
+            local event = allEvents[i].copy()
+
+            event.timing = displace + event.timing
+
+            if event.is('long') then -- Notes with endTiming also have to have this value updated
+                event.endTiming = displace + event.endTiming
+            end
+
+            batchCommand.add(event.save())
+
+            if event.is('arc') then 
+                local arc = allEvents[i]
+
+                -- Look for arctaps belonging to this arc to copy
+                for i = 1, #arctaps, 1 do
+                    local arctap = stash.arctaps[i]
+                    if arctap.arc == arc then
+                        local arctapCopy = arctap.copy();
+                        arctapCopy.arc = event
+                        arctapCopy.timing = displace + arctap.timing
+                        batchCommand.add(arctapCopy.save())
+                    end
+                end
+            end
+        end
+
+        batchCommand.commit()
+    end)
+end)
+```
+
+Try this for yourself:
+- Add a macro to remove all stashes
+- Display the macro name with more information, such as note count
+- Experiment with different rich text formatting. Check out the official documentation here: https://docs.unity3d.com/2018.3/Documentation/Manual/StyledText.html
+- Expand the macro to support different bpm
+
+In fact, the idea of manipulating macros with macros themselves are super powerful, I'm sure you will have other amazing ideas as well!
+
 ### A few extra tips
 - Remember to always use `local` for assigning local variable
 - Error message can be hard to read within Arcade. You can always open the `Error Log` (middle left hand side)
@@ -517,6 +809,7 @@ Try this out for yourself:
 Function|Description|Output
 -|-|-
 addMacro(string macro, function macroDef)|Register a macro|Nil
+addMacroWithSort(string macro, string sortKey, function macroDef)|Register a macro with a custom sort key|Nil
 removeMacro(string macro)|Unregister a macro|Nil
 log(object content)|Output content to the log file|Nil
 notify(object content)|Output content to the toast notification|Nil
@@ -613,12 +906,13 @@ result["lane"]|Returned lane value|number
 ### 3.2 EventSelectionRequest
 Property|Description|Type
 -|-|-
-result["tap"]|Returned list of taps|Table (of LuaTap)
-result["hold"]|Returned list of holds|Table (of LuaHold)
-result["arc"]|Returned list of arcs and traces|Table (of LuaArc)
-result["arctap"]|Returned list of arctaps|Table (of LuaArcTap)
-result["timing"]|Returned list of timing events|Table (of LuaTiming)
-result["camera"]|Returned list of camera events|Table (of LuaCamera)
+result["tap"]|Returned list of taps (sorted by timing)|Table (of LuaTap)
+result["hold"]|Returned list of holds (sorted by timing)|Table (of LuaHold)
+result["arc"]|Returned list of arcs and traces (sorted by timing)|Table (of LuaArc)
+result["arctap"]|Returned list of arctaps (sorted by timing)|Table (of LuaArcTap)
+result["timing"]|Returned list of timing events (sorted by timing)|Table (of LuaTiming)
+result["camera"]|Returned list of camera events (sorted by timing)|Table (of LuaCamera)
+resultCombined|Returned list of all events (sorted by timing)|Table (of LuaChartEvent)
 ### 3.3 DialogRequest
 Property|Description|Type
 -|-|-
@@ -661,6 +955,7 @@ Method|Description|Type
 copy()|Create a copy of the event (not attached)|LuaChartEvent
 save()|Create a command that saves the event to the chart|LuaChartCommand
 delete()|Create a command that deletes the event from the chart|LuaChartCommand
+is(string type)|Returns whether this event is of a given type ('tap', 'arc', 'floor', 'short',...)|bool
 
 Classes from 5.1 to 5.6 inherits all properties and methods mentioned in 5.0.
 
