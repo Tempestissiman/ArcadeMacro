@@ -830,7 +830,7 @@ currentArcType|Current default arc type|string
 currentIsVoidMode|true means creating traces by default, false means creating arcs by default|bool
 currentTimingGroup|Currently active timing group|bool
 timingGroupCount|Number of timing groups in the current chart|bool
-language|The currently used language|number
+language|The currently used language|string
 
 
 Static method|Description|Output
