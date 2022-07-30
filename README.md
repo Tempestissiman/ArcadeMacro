@@ -717,7 +717,7 @@ The ordering should be fixed now. You can even modify this to allow newer stashe
 Here's the final code:
 ```lua
 storedStashes = {}
-addMacroWithSort("<color=#2E86AB>stash."..name.."</color>", "stash."..name, function()
+addMacro("stash", function()
     -- Request for user's selection
     local eventRequest = EventSelectionInput.requestEvents(
                             EventSelectionConstraint.create().any(),
@@ -741,7 +741,7 @@ addMacroWithSort("<color=#2E86AB>stash."..name.."</color>", "stash."..name, func
     storedStashes[name] = newStash
     notify(#newStash.events)
 
-    addMacro("stash."..name, function() 
+    addMacroWithSort("<color=#2E86AB>stash."..name.."</color>", "stash."..name, function()
         local stash = storedStashes[name]
 
         local timingRequest = TrackInput.requestTiming(false, "Select where to paste your stash")
